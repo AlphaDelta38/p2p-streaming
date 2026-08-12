@@ -24,7 +24,7 @@
     "postinstall": "nuxt prepare",
     "app:dev": "npm run generate && electron .",
     "app:build": "npm run generate && electron-builder build",
-    "typecheck": "npx nuxi typecheck",
+    "typecheck": "vue-tsc --noEmit",
     "release": "npm version patch && git push --follow-tags"
   },
   "build": {
