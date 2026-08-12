@@ -1,0 +1,63 @@
+{
+  "name": "p2p-streaming",
+  "version": "1.0.0",
+  "description": "A pure WebRTC Mesh screen sharing application. No server needed. Features P2P high-quality low-latency streaming.",
+  "keywords": [
+    "webrtc",
+    "p2p-streaming",
+    "p2p",
+    "mesh",
+    "nuxt",
+    "electron",
+    "desktop-app",
+    "metered"
+  ],
+  "author": "Your Name",
+  "type": "module",
+  "private": true,
+  "main": "electron/main.mjs",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "app:dev": "npm run generate && electron .",
+    "app:build": "npm run generate && electron-builder build",
+    "typecheck": "npx nuxi typecheck",
+    "release": "npm version patch && git push --follow-tags"
+  },
+  "build": {
+    "appId": "com.p2pstreaming.app",
+    "directories": {
+      "output": "web-app"
+    },
+    "files": [
+      "electron/**/*",
+      ".output/public/**/*"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "dependencies": {
+    "@metered-ca/realtime": "^1.2.0",
+    "@nuxtjs/i18n": "^10.6.0",
+    "nuxt": "^4.5.2",
+    "nuxt-aweasome-http": "^1.2.0",
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0"
+  },
+  "devDependencies": {
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "^7.0.2",
+    "vue-tsc": "^3.3.9"
+  }
+}
