@@ -206,7 +206,15 @@ export const useMeteredPeer = () => {
         isScreenSharing.value = false
         addToast(t('toast.screenStopped'), 'info')
       } else {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            width: { ideal: 1920, max: 3840 },
+            height: { ideal: 1080, max: 2160 },
+            frameRate: { ideal: 60, max: 60 },
+            displaySurface: 'monitor'
+          },
+          audio: true
+        })
         const videoTrack = stream.getVideoTracks()[0]
         const audioTrack = stream.getAudioTracks()[0]
         
