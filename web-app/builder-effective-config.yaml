@@ -1,0 +1,15 @@
+directories:
+  output: web-app
+  buildResources: build
+appId: com.p2pstreaming.app
+files:
+  - filter:
+      - electron/**/*
+      - .output/public/**/*
+mac:
+  target: dmg
+win:
+  target: nsis
+linux:
+  target: AppImage
+electronVersion: 43.3.0
