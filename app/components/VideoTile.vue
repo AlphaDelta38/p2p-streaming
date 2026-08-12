@@ -1,5 +1,5 @@
 <template>
-  <div :class="$style.inner">
+  <div :class="$style.inner" ref="containerRef">
     <video
       v-show="!isAudioOnly"
       ref="videoRef"
@@ -36,6 +36,17 @@
       <span v-if="type === 'screen'" :class="$style.typeBadge">{{ t('stream.screen') }}</span>
       <span v-else :class="$style.typeBadge">{{ t('stream.microphone') }}</span>
     </div>
+
+    <button 
+      v-if="type === 'screen' && !isLocal" 
+      :class="$style.fullscreenBtn" 
+      @click="toggleFullscreen"
+      title="На весь экран"
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <path fill="currentColor" d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M10,17V19H5V14H7V17H10Z" />
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -48,11 +59,13 @@ const props = defineProps<{
   label: string
   type: 'screen' | 'mic'
   isLocal: boolean
+  volume: number
 }>()
 
 const { t } = useI18n()
 const labelText = computed(() => props.label)
 
+const containerRef = ref<HTMLElement | null>(null)
 const videoRef = ref<HTMLVideoElement | null>(null)
 
 const isAudioOnly = computed(() => {
@@ -78,6 +91,25 @@ watch(
     setStream()
   },
 )
+
+watch(
+  () => props.volume,
+  (newVol) => {
+    if (videoRef.value) {
+      videoRef.value.volume = newVol
+    }
+  }
+)
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    containerRef.value?.requestFullscreen().catch(err => {
+      console.warn('Fullscreen failed:', err)
+    })
+  } else {
+    document.exitFullscreen()
+  }
+}
 </script>
 
 <style module>
@@ -137,6 +169,28 @@ watch(
   opacity: 0.7;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.fullscreenBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.fullscreenBtn:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 @keyframes audioPulse {

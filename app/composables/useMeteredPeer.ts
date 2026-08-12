@@ -14,6 +14,17 @@ const localStreams = ref<{ mic?: MediaStream; screen?: MediaStream }>({
   screen: undefined,
 })
 
+const username = ref(process.client ? localStorage.getItem('p2p_username') || '' : '')
+const remoteUsernames = ref<Map<string, string>>(new Map())
+const volumes = ref<Map<string, { mic: number, screen: number }>>(new Map())
+
+const updateVolume = (peerId: string, type: 'mic' | 'screen', value: number) => {
+  const peerVolumes = volumes.value.get(peerId) || { mic: 1, screen: 1 }
+  peerVolumes[type] = value
+  volumes.value.set(peerId, peerVolumes)
+  volumes.value = new Map(volumes.value)
+}
+
 let peerInstance: any = null
 
 export const useMeteredPeer = () => {
@@ -50,6 +61,13 @@ export const useMeteredPeer = () => {
       if (!peers.value.has(remote.id)) {
         peers.value.set(remote.id, { id: remote.id, streams: [] })
       }
+      
+      volumes.value.set(remote.id, { mic: 1, screen: 1 })
+      volumes.value = new Map(volumes.value)
+
+      if (username.value) {
+        peer.sendTo(remote.id, { type: 'username', value: username.value }).catch(() => {})
+      }
 
       addToast(t('toast.peerJoined'), 'info')
 
@@ -75,7 +93,18 @@ export const useMeteredPeer = () => {
     peer.on('peer-left', ({ peer: remote }: any) => {
       console.log('[WebRTC] Peer left:', remote.id)
       peers.value.delete(remote.id)
+      remoteUsernames.value.delete(remote.id)
+      remoteUsernames.value = new Map(remoteUsernames.value)
+      volumes.value.delete(remote.id)
+      volumes.value = new Map(volumes.value)
       addToast(t('toast.peerLeft'), 'info')
+    })
+
+    peer.on('data', (payload: any) => {
+      if (payload.data && payload.data.type === 'username') {
+        remoteUsernames.value.set(payload.senderPeerId, payload.data.value)
+        remoteUsernames.value = new Map(remoteUsernames.value)
+      }
     })
   }
 
@@ -86,6 +115,10 @@ export const useMeteredPeer = () => {
       await peer.join(code)
       roomCode.value = code
       isConnected.value = true
+      
+      if (username.value) {
+        peer.send({ type: 'username', value: username.value }).catch(() => {})
+      }
     } catch (error) {
       console.error('Failed to create room:', error)
       addToast(t('error.connectionFailed'), 'error')
@@ -100,6 +133,10 @@ export const useMeteredPeer = () => {
       await peer.join(normalizedCode)
       roomCode.value = normalizedCode
       isConnected.value = true
+      
+      if (username.value) {
+        peer.send({ type: 'username', value: username.value }).catch(() => {})
+      }
     } catch (error) {
       console.error('Failed to join room:', error)
       addToast(t('error.connectionFailed'), 'error')
@@ -128,6 +165,8 @@ export const useMeteredPeer = () => {
     isConnected.value = false
     roomCode.value = ''
     peers.value = new Map()
+    remoteUsernames.value = new Map()
+    volumes.value = new Map()
     peerInstance = null
   }
 
@@ -230,6 +269,10 @@ export const useMeteredPeer = () => {
     peers,
     localStreams,
     participantCount,
+    username,
+    remoteUsernames,
+    volumes,
+    updateVolume,
     createRoom,
     joinRoom,
     leaveRoom,

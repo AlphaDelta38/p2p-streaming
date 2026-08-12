@@ -5,12 +5,23 @@
       <p :class="$style.subtitle">{{ t('app.subtitle') }}</p>
 
       <div :class="$style.actions">
-        <button class="btn btn--primary" @click="handleCreate" :disabled="isCreating">
+        <button class="btn btn--primary" @click="handleCreate" :disabled="isCreating || !username.trim()">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
           </svg>
           {{ isCreating ? t('lobby.creating') : t('lobby.createRoom') }}
         </button>
+
+        <div :class="$style.inputGroup">
+          <input
+            v-model="username"
+            type="text"
+            :placeholder="t('lobby.nicknamePlaceholder') || 'Ваш никнейм'"
+            class="input"
+            maxlength="20"
+            @blur="saveUsername"
+          />
+        </div>
 
         <div :class="$style.divider">
           <span>{{ t('lobby.or') }}</span>
@@ -28,7 +39,7 @@
           <button
             class="btn btn--ghost"
             @click="handleJoin"
-            :disabled="!inputCode.trim() || isJoining"
+            :disabled="!inputCode.trim() || isJoining || !username.trim()"
           >
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path fill="currentColor" d="M10,17V14H3V10H10V7L15,12L10,17M10,2H19A2,2 0 0,1 21,4V20A2,2 0 0,1 19,22H10A2,2 0 0,1 8,20V18H10V20H19V4H10V6H8V4A2,2 0 0,1 10,2Z" />
@@ -50,13 +61,21 @@ import { ref } from 'vue'
 import { useMeteredPeer } from '../composables/useMeteredPeer'
 import { useI18n } from 'vue-i18n'
 
-const { createRoom, joinRoom } = useMeteredPeer()
+const { createRoom, joinRoom, username } = useMeteredPeer()
 const { t } = useI18n()
 const inputCode = ref('')
 const isCreating = ref(false)
 const isJoining = ref(false)
 
+const saveUsername = () => {
+  if (process.client && username.value) {
+    localStorage.setItem('p2p_username', username.value)
+  }
+}
+
 const handleCreate = async () => {
+  if (!username.value.trim()) return
+  saveUsername()
   isCreating.value = true
   try {
     await createRoom()
@@ -66,7 +85,8 @@ const handleCreate = async () => {
 }
 
 const handleJoin = async () => {
-  if (!inputCode.value.trim()) return
+  if (!inputCode.value.trim() || !username.value.trim()) return
+  saveUsername()
   isJoining.value = true
   try {
     await joinRoom(inputCode.value)
@@ -127,6 +147,13 @@ const handleJoin = async () => {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .divider {

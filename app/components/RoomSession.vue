@@ -10,11 +10,44 @@
         </button>
       </div>
 
-      <div :class="$style.participantsBadge">
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path fill="currentColor" d="M16 17V19H2V17S2 13 9 13 16 17 16 17M12.5 7.5A3.5 3.5 0 1 0 9 11A3.5 3.5 0 0 0 12.5 7.5M15.94 13A5.32 5.32 0 0 1 18 17V19H22V17S22 13.37 15.94 13M15 4A3.39 3.39 0 0 0 13.07 4.59A5 5 0 0 1 13.07 10.41A3.39 3.39 0 0 0 15 11A3.5 3.5 0 0 0 15 4Z" />
-        </svg>
-        {{ participantCount }}
+      <div :class="$style.participantsWrapper">
+        <button :class="$style.participantsBadge" @click="toggleParticipants">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M16 17V19H2V17S2 13 9 13 16 17 16 17M12.5 7.5A3.5 3.5 0 1 0 9 11A3.5 3.5 0 0 0 12.5 7.5M15.94 13A5.32 5.32 0 0 1 18 17V19H22V17S22 13.37 15.94 13M15 4A3.39 3.39 0 0 0 13.07 4.59A5 5 0 0 1 13.07 10.41A3.39 3.39 0 0 0 15 11A3.5 3.5 0 0 0 15 4Z" />
+          </svg>
+          {{ participantCount }}
+        </button>
+
+        <div v-if="showParticipants" :class="$style.participantsDropdown">
+          <div :class="$style.participantItem">
+            <span>{{ username || t('stream.you') }} (Вы)</span>
+          </div>
+          <div v-for="[peerId, peerData] in peers" :key="peerId" :class="$style.participantItem">
+            <div :class="$style.participantHeader">
+              <span>{{ remoteUsernames.get(peerId) || peerId.substring(0, 4) }}</span>
+            </div>
+            <div :class="$style.volumeControls" v-if="peerData.streams.length > 0">
+              <div v-if="hasStreamType(peerData.streams, 'mic')" :class="$style.volumeControl">
+                <label>🎙️ Звук</label>
+                <input 
+                  type="range" 
+                  min="0" max="1" step="0.05" 
+                  :value="volumes.get(peerId)?.mic ?? 1"
+                  @input="updateVolume(peerId, 'mic', Number(($event.target as HTMLInputElement).value))"
+                />
+              </div>
+              <div v-if="hasStreamType(peerData.streams, 'screen')" :class="$style.volumeControl">
+                <label>🖥️ Экран</label>
+                <input 
+                  type="range" 
+                  min="0" max="1" step="0.05"
+                  :value="volumes.get(peerId)?.screen ?? 1"
+                  @input="updateVolume(peerId, 'screen', Number(($event.target as HTMLInputElement).value))"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -25,18 +58,20 @@
       >
         <VideoTile
           :stream="localStreams.screen"
-          :label="t('stream.you')"
+          :label="username || t('stream.you')"
           type="screen"
           :isLocal="true"
+          :volume="0"
         />
       </div>
 
       <div v-if="localStreams.mic" :class="$style.videoTileWrapper">
         <VideoTile
           :stream="localStreams.mic"
-          :label="t('stream.you')"
+          :label="username || t('stream.you')"
           type="mic"
           :isLocal="true"
+          :volume="0"
         />
       </div>
 
@@ -48,9 +83,10 @@
         >
           <VideoTile
             :stream="stream"
-            :label="`${t('stream.peer')} ${peerId.substring(0, 4)}`"
+            :label="remoteUsernames.get(peerId) || peerId.substring(0, 4)"
             :type="streamHasVideo(stream) ? 'screen' : 'mic'"
             :isLocal="false"
+            :volume="streamHasVideo(stream) ? (volumes.get(peerId)?.screen ?? 1) : (volumes.get(peerId)?.mic ?? 1)"
           />
         </div>
       </template>
@@ -80,9 +116,16 @@ import { useMeteredPeer } from '../composables/useMeteredPeer'
 import { useToast } from '../composables/useToast'
 import { useI18n } from 'vue-i18n'
 
-const { roomCode, localStreams, peers, participantCount } = useMeteredPeer()
+const { roomCode, localStreams, peers, participantCount, username, remoteUsernames, volumes, updateVolume } = useMeteredPeer()
 const { addToast } = useToast()
 const { t } = useI18n()
+
+const showParticipants = ref(false)
+const toggleParticipants = () => showParticipants.value = !showParticipants.value
+
+const hasStreamType = (streams: MediaStream[], type: 'mic' | 'screen') => {
+  return streams.some(s => type === 'screen' ? s.getVideoTracks().length > 0 : s.getVideoTracks().length === 0)
+}
 
 const hasStreams = computed(() => {
   return localStreams.value.screen || localStreams.value.mic || peers.value.size > 0
@@ -114,6 +157,7 @@ const copyCode = async () => {
   flex-direction: column;
   height: 100vh;
   position: relative;
+  overflow: hidden;
 }
 
 .header {
@@ -159,6 +203,10 @@ const copyCode = async () => {
   color: var(--color-text);
 }
 
+.participantsWrapper {
+  position: relative;
+}
+
 .participantsBadge {
   display: inline-flex;
   align-items: center;
@@ -170,6 +218,57 @@ const copyCode = async () => {
   border-radius: var(--radius-full);
   font-size: 0.875rem;
   font-weight: 500;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.participantsDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  width: 250px;
+  background: rgba(15, 15, 20, 0.95);
+  backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.participantItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.participantHeader {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.volumeControls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+}
+
+.volumeControl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.volumeControl input {
+  width: 100%;
 }
 
 .grid {
@@ -178,7 +277,7 @@ const copyCode = async () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
-  align-content: center;
+  align-content: start;
   justify-content: center;
   overflow-y: auto;
   perspective: 1000px;
