@@ -58,7 +58,30 @@ export const useMeteredPeer = () => {
               { urls: 'stun:stun3.l.google.com:19302' }
             ]
           }
-          return new RTCPeerConnection(enrichedConfig)
+          
+          console.log('[WebRTC Debug] Initializing RTCPeerConnection with config:', JSON.stringify(enrichedConfig.iceServers))
+          const pc = new RTCPeerConnection(enrichedConfig)
+          
+          pc.addEventListener('icecandidate', (event) => {
+            if (event.candidate) {
+              console.log(`[WebRTC Debug] Candidate found: Type=${event.candidate.type}, Protocol=${event.candidate.protocol}, IP=${event.candidate.address}`)
+            } else {
+              console.log('[WebRTC Debug] ICE candidate gathering finished.')
+            }
+          })
+
+          pc.addEventListener('iceconnectionstatechange', () => {
+            console.log('[WebRTC Debug] ICE Connection State =>', pc.iceConnectionState)
+            if (pc.iceConnectionState === 'failed') {
+              console.error('[WebRTC Debug] CONNECTION FAILED! Symmetric NAT or Firewall blocked the P2P connection.')
+            }
+          })
+
+          pc.addEventListener('connectionstatechange', () => {
+            console.log('[WebRTC Debug] Overall Connection State =>', pc.connectionState)
+          })
+
+          return pc
         }
       })
       setupPeerEvents(peerInstance)
