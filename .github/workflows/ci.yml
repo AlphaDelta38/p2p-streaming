@@ -36,4 +36,4 @@ jobs:
         run: pnpm run generate
         
       - name: Test Electron Build
-        run: pnpm exec electron-builder build
+        run: pnpm exec electron-builder build --publish never
