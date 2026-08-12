@@ -1,7 +1,9 @@
-import { app, BrowserWindow, protocol, net } from 'electron'
+import { app, BrowserWindow, protocol, net, session, desktopCapturer } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -24,6 +26,18 @@ function createWindow() {
   })
 
   mainWindow.loadURL('app://localhost/')
+
+  try {
+    const envPath = join(__dirname, '../.env')
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf-8')
+      if (envContent.match(/environment\s*=\s*dev/i) || envContent.match(/enviromnet\s*=\s*dev/i)) {
+        mainWindow.webContents.openDevTools()
+      }
+    }
+  } catch (e) {
+    console.error('Failed to read .env for devtools', e)
+  }
 }
 
 app.whenReady().then(() => {
@@ -42,6 +56,14 @@ app.whenReady().then(() => {
     }
 
     return net.fetch(`file://${targetPath}`)
+  })
+
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+      callback({ video: sources[0] })
+    }).catch((err) => {
+      console.error('Error getting desktop sources:', err)
+    })
   })
 
   createWindow()

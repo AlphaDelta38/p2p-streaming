@@ -167,8 +167,13 @@ export const useMeteredPeer = () => {
         isScreenSharing.value = false
         addToast(t('toast.screenStopped'), 'info')
       } else {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-        const videoTrack = stream.getVideoTracks()[0]
+        // Request only video to prevent Windows-specific negotiation bugs with audio tracks
+        const rawStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+        const videoTrack = rawStream.getVideoTracks()[0]
+        
+        // Create a clean stream with only the video track
+        const stream = new MediaStream([videoTrack])
+        
         if (videoTrack) {
           videoTrack.onended = () => {
             if (peerInstance && localStreams.value.screen) {

@@ -62,6 +62,9 @@ const isAudioOnly = computed(() => {
 const setStream = () => {
   if (videoRef.value && props.stream) {
     videoRef.value.srcObject = props.stream
+    videoRef.value.play().catch((err) => {
+      console.warn('[VideoTile] Autoplay blocked or failed to play:', err)
+    })
   }
 }
 
