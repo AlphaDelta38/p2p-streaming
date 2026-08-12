@@ -167,17 +167,21 @@ export const useMeteredPeer = () => {
         isScreenSharing.value = false
         addToast(t('toast.screenStopped'), 'info')
       } else {
-        // Request only video to prevent Windows-specific negotiation bugs with audio tracks
-        const rawStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
-        const videoTrack = rawStream.getVideoTracks()[0]
-        
-        // Create a clean stream with only the video track
-        const stream = new MediaStream([videoTrack])
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+        const videoTrack = stream.getVideoTracks()[0]
+        const audioTrack = stream.getAudioTracks()[0]
         
         if (videoTrack) {
           videoTrack.onended = () => {
             if (peerInstance && localStreams.value.screen) {
-              peerInstance.removeStream(localStreams.value.screen)
+              const vTrack = localStreams.value.screen.getVideoTracks()[0]
+              const aTrack = localStreams.value.screen.getAudioTracks()[0]
+              if (vTrack) {
+                try { peerInstance.removeTrack(vTrack) } catch (e) {}
+              }
+              if (aTrack) {
+                try { peerInstance.removeTrack(aTrack) } catch (e) {}
+              }
             }
             localStreams.value = { ...localStreams.value, screen: undefined }
             isScreenSharing.value = false
@@ -186,9 +190,29 @@ export const useMeteredPeer = () => {
         }
 
         localStreams.value = { ...localStreams.value, screen: stream }
+        
         if (peerInstance) {
-          peerInstance.addStream(stream, { role: 'screen', label: 'Screen Share' })
+          if (videoTrack) {
+            try {
+              peerInstance.addTrack(videoTrack, stream, { role: 'screen', label: 'Screen Share' })
+            } catch (err) {
+              console.error('Failed to add screen video track:', err)
+            }
+          }
+          
+          if (audioTrack) {
+            setTimeout(() => {
+              try {
+                if (isScreenSharing.value) {
+                  peerInstance.addTrack(audioTrack, stream, { role: 'screen-audio', label: 'Screen Audio' })
+                }
+              } catch (err) {
+                console.error('Failed to add screen audio track:', err)
+              }
+            }, 1000)
+          }
         }
+        
         isScreenSharing.value = true
         addToast(t('toast.screenStarted'), 'success')
       }
