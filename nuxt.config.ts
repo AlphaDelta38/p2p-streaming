@@ -34,6 +34,14 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Share your screen with anyone. No server needed. Pure WebRTC mesh.' },
+      ],
+      link: [
+        {
+          rel: 'preload',
+          as: 'style',
+          href: '~/assets/fonts/inter/minified.css',
+          crossorigin: ''
+        }
       ]
     },
   },
