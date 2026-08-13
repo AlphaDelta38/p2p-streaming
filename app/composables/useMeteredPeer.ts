@@ -244,24 +244,34 @@ export const useMeteredPeer = () => {
 
   const toggleScreenShare = async () => {
     try {
-      if (isScreenSharing.value && localStreams.value.screen) {
-        localStreams.value.screen.getTracks().forEach((t) => t.stop())
-        if (peerInstance) {
-          peerInstance.removeStream(localStreams.value.screen)
+      if (isScreenSharing.value) {
+        if (localStreams.value.screen) {
+          localStreams.value.screen.getTracks().forEach((t) => t.stop())
+          if (peerInstance) {
+            try { peerInstance.removeStream(localStreams.value.screen) } catch (e) {}
+          }
         }
         localStreams.value = { ...localStreams.value, screen: undefined }
         isScreenSharing.value = false
         addToast(t('toast.screenStopped'), 'info')
       } else {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            width: { ideal: 1920, max: 3840 },
-            height: { ideal: 1080, max: 2160 },
-            frameRate: { ideal: 60, max: 60 },
-            displaySurface: 'monitor'
-          },
-          audio: true
-        })
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              frameRate: { ideal: 30, max: 60}
+            },
+            audio: true
+          })
+        } catch (e) {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true
+          })
+        }
+
         const videoTrack = stream.getVideoTracks()[0]
         const audioTrack = stream.getAudioTracks()[0]
         
