@@ -4,7 +4,7 @@
       <div :class="$style.roomCode">
         <span :class="$style.roomCodeValue">{{ roomCode }}</span>
         <button :class="$style.roomCodeCopy" @click="copyCode" :title="t('room.copyCode')">
-          <svg viewBox="0 0 24 24" width="20" height="20">
+          <svg viewBox="0 0 24 24" width="18" height="18">
             <path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
           </svg>
         </button>
@@ -17,37 +17,7 @@
           </svg>
           {{ participantCount }}
         </button>
-
-        <div v-if="showParticipants" :class="$style.participantsDropdown">
-          <div :class="$style.participantItem">
-            <span>{{ username || t('stream.you') }} (Вы)</span>
-          </div>
-          <div v-for="[peerId, peerData] in peers" :key="peerId" :class="$style.participantItem">
-            <div :class="$style.participantHeader">
-              <span>{{ remoteUsernames.get(peerId) || peerId.substring(0, 4) }}</span>
-            </div>
-            <div :class="$style.volumeControls" v-if="peerData.streams.length > 0">
-              <div v-if="hasStreamType(peerData.streams, 'mic')" :class="$style.volumeControl">
-                <label>🎙️ Звук</label>
-                <input 
-                  type="range" 
-                  min="0" max="1" step="0.05" 
-                  :value="volumes.get(peerId)?.mic ?? 1"
-                  @input="updateVolume(peerId, 'mic', Number(($event.target as HTMLInputElement).value))"
-                />
-              </div>
-              <div v-if="hasStreamType(peerData.streams, 'screen')" :class="$style.volumeControl">
-                <label>🖥️ Экран</label>
-                <input 
-                  type="range" 
-                  min="0" max="1" step="0.05"
-                  :value="volumes.get(peerId)?.screen ?? 1"
-                  @input="updateVolume(peerId, 'screen', Number(($event.target as HTMLInputElement).value))"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <ParticipantsMenu v-if="showParticipants" />
       </div>
     </div>
 
@@ -172,12 +142,11 @@ const copyCode = async () => {
 .roomCode {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 1.5rem;
   background: rgba(0, 0, 0, 0.3);
   border: 1px dashed var(--color-glass-border);
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1.25rem;
   border-radius: var(--radius-md);
-  margin-bottom: 1rem;
 }
 
 .roomCodeValue {
@@ -222,60 +191,13 @@ const copyCode = async () => {
   color: var(--color-text);
 }
 
-.participantsDropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 0.5rem;
-  width: 250px;
-  background: rgba(15, 15, 20, 0.95);
-  backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--color-glass-border);
-  border-radius: var(--radius-lg);
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  box-shadow: var(--shadow-lg);
-}
 
-.participantItem {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.participantHeader {
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-.volumeControls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.5rem;
-  border-radius: var(--radius-md);
-}
-
-.volumeControl {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.volumeControl input {
-  width: 100%;
-}
 
 .grid {
   flex: 1;
   padding: 1rem 2rem 6rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
   align-content: start;
   justify-content: center;
@@ -308,7 +230,11 @@ const copyCode = async () => {
   border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  
+  flex: 1 1 320px;
+  max-width: 480px;
   aspect-ratio: 16/9;
+  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -323,14 +249,12 @@ const copyCode = async () => {
 }
 
 .screenTileWrapper {
-  grid-column: 1 / -1;
-  aspect-ratio: auto;
-  min-height: 50vh;
+  flex: 1 1 800px;
+  max-width: 1280px;
 }
 
 @media (max-width: 768px) {
   .grid {
-    grid-template-columns: 1fr;
     padding: 1rem 1rem 5rem;
   }
 }

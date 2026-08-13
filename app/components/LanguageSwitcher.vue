@@ -27,10 +27,7 @@ const handleChange = (event: Event) => {
 
 <style module>
 .langSwitcher {
-  position: absolute;
-  top: 1.5rem;
-  right: 2rem;
-  z-index: 40;
+  /* position relative allows it to flow naturally in the footer flexbox */
 }
 
 .langSwitcher select {
@@ -58,10 +55,5 @@ const handleChange = (event: Event) => {
   color: var(--color-text);
 }
 
-@media (max-width: 768px) {
-  .langSwitcher {
-    top: 1rem;
-    right: 1rem;
-  }
-}
+
 </style>

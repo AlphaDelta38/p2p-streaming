@@ -34,6 +34,7 @@
             :placeholder="t('lobby.roomCodePlaceholder')"
             class="input"
             maxlength="6"
+            @input="formatCode"
             @keyup.enter="handleJoin"
           />
           <button
@@ -57,15 +58,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useMeteredPeer } from '../composables/useMeteredPeer'
 import { useI18n } from 'vue-i18n'
 
+const route = useRoute()
 const { createRoom, joinRoom, username } = useMeteredPeer()
 const { t } = useI18n()
 const inputCode = ref('')
 const isCreating = ref(false)
 const isJoining = ref(false)
+
+const formatCode = () => {
+  inputCode.value = inputCode.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+}
+
+onMounted(() => {
+  if (route.query.room) {
+    inputCode.value = route.query.room as string
+    if (username.value) {
+      handleJoin()
+    }
+  }
+})
 
 const saveUsername = () => {
   if (process.client && username.value) {
@@ -182,6 +198,7 @@ const handleJoin = async () => {
   display: flex;
   justify-content: center;
   margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 768px) {

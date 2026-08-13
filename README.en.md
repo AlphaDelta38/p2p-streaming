@@ -7,7 +7,12 @@
 
 **P2P Streaming** is a modern, decentralized application for screen sharing and communication built on **WebRTC Mesh** architecture. The application does not require dedicated media servers (SFU/MCU) — all video and audio traffic is transmitted directly (Peer-to-Peer) between room participants, ensuring maximum privacy, low latency, and no session time limits.
 
-The project is based on **Nuxt 4 / Vue 3**, and the desktop versions are built using **Electron**. Signaling (user discovery) and strict firewall traversal (via STUN/TURN protocols) are powered by **Metered.ca** infrastructure.
+
+
+## ✨ Key Features
+
+- **Native Desktop App:** Available not only through the browser but also as a full-fledged native application for macOS, Windows, and Linux powered by Electron.
+- **Uncompromising Quality:** Forced video streaming at 1920x1080 (and higher) at 60 FPS for screen sharing.
 
 ---
 

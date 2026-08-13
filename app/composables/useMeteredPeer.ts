@@ -154,6 +154,9 @@ export const useMeteredPeer = () => {
       roomCode.value = code
       isConnected.value = true
       
+      const router = useRouter()
+      router.replace({ query: { room: code } })
+      
       if (username.value) {
         peer.send({ type: 'username', value: username.value }).catch(() => {})
       }
@@ -171,6 +174,9 @@ export const useMeteredPeer = () => {
       await peer.join(normalizedCode)
       roomCode.value = normalizedCode
       isConnected.value = true
+      
+      const router = useRouter()
+      router.replace({ query: { room: normalizedCode } })
       
       if (username.value) {
         peer.send({ type: 'username', value: username.value }).catch(() => {})
@@ -206,6 +212,9 @@ export const useMeteredPeer = () => {
     remoteUsernames.value = new Map()
     volumes.value = new Map()
     peerInstance = null
+    
+    const router = useRouter()
+    router.replace({ query: {} })
   }
 
   const toggleMicrophone = async () => {
