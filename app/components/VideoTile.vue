@@ -72,58 +72,10 @@ const isAudioOnly = computed(() => {
   return props.stream.getVideoTracks().length === 0
 })
 
-let audioCtx: AudioContext | null = null
-let gainNode: GainNode | null = null
-let mediaSource: MediaStreamAudioSourceNode | null = null
-
-const initWebAudio = () => {
-  if (!props.stream || props.stream.getAudioTracks().length === 0) return
-  
-  if (gainNode) {
-    gainNode.disconnect()
-    gainNode = null
-  }
-  if (mediaSource) {
-    mediaSource.disconnect()
-    mediaSource = null
-  }
-
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-    if (!AudioContextClass) return
-    
-    if (!audioCtx) {
-      audioCtx = new AudioContextClass()
-    }
-    
-    mediaSource = audioCtx.createMediaStreamSource(props.stream)
-    gainNode = audioCtx.createGain()
-    
-    gainNode.gain.value = props.volume
-    
-    mediaSource.connect(gainNode)
-    gainNode.connect(audioCtx.destination)
-  } catch (err) {
-    console.warn('[VideoTile] WebAudio setup failed:', err)
-  }
-}
-
-const isIOS = () => {
-  if (!process.client) return false
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-}
-
 const setStream = () => {
   if (videoRef.value && props.stream) {
-    if (isIOS() && props.stream.getAudioTracks().length > 0 && !props.isLocal) {
-      const videoOnlyStream = new MediaStream()
-      props.stream.getVideoTracks().forEach(t => videoOnlyStream.addTrack(t))
-      videoRef.value.srcObject = videoOnlyStream
-      initWebAudio()
-    } else {
-      videoRef.value.srcObject = props.stream
-      videoRef.value.volume = props.volume
-    }
+    videoRef.value.srcObject = props.stream
+    videoRef.value.volume = props.volume
     
     videoRef.value.play().catch((err) => {
       console.warn('[VideoTile] Autoplay blocked or failed to play:', err)
@@ -147,12 +99,6 @@ watch(
   (newVol) => {
     if (videoRef.value) {
       videoRef.value.volume = newVol
-    }
-    if (gainNode && audioCtx) {
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume()
-      }
-      gainNode.gain.setTargetAtTime(newVol, audioCtx.currentTime, 0.1)
     }
   }
 )

@@ -256,15 +256,28 @@ export const useMeteredPeer = () => {
         addToast(t('toast.screenStopped'), 'info')
       } else {
         let stream;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         try {
-          stream = await navigator.mediaDevices.getDisplayMedia({
-            video: {
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-              frameRate: { ideal: 30, max: 60}
-            },
-            audio: true
-          })
+          if (isIOS) {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+              video: {
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                frameRate: { ideal: 30 }
+              },
+              audio: true
+            })
+          } else {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+              video: {
+                width: { ideal: 1920, max: 3840 },
+                height: { ideal: 1080, max: 2160 },
+                frameRate: { ideal: 60, max: 60 },
+                displaySurface: 'monitor'
+              },
+              audio: true
+            })
+          }
         } catch (e) {
           stream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
